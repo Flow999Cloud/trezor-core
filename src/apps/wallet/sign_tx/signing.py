@@ -64,6 +64,8 @@ async def check_tx_fee(tx: SignTx, root):
     change_out = 0  # change output amount
     wallet_path = []  # common prefix of input paths
     segwit = {}  # dict of booleans stating if input is segwit
+    multisig_fp = bytes()  # multisig fingerprint
+    multisig_fp_mismatch = False  # flag if multisig input fingerprints are equal
 
     for i in range(tx.inputs_count):
         # STAGE_REQUEST_1_INPUT
@@ -72,9 +74,7 @@ async def check_tx_fee(tx: SignTx, root):
         write_tx_input_check(h_first, txi)
         weight.add_input(txi)
 
-        is_segwit = (txi.script_type == InputScriptType.SPENDWITNESS or
-                     txi.script_type == InputScriptType.SPENDP2SHWITNESS)
-        if is_segwit:
+        if txi.script_type in [InputScriptType.SPENDWITNESS, InputScriptType.SPENDP2SHWITNESS]:
             if not coin.segwit:
                 raise SigningError(FailureType.DataError,
                                    'Segwit not enabled on this coin')
@@ -90,6 +90,12 @@ async def check_tx_fee(tx: SignTx, root):
             segwit[i] = False
             total_in += await get_prevtx_output_value(
                 tx_req, txi.prev_hash, txi.prev_index)
+            if txi.script_type == InputScriptType.SPENDMULTISIG:
+                fp = multisig_fingerprint(txi.multisig)
+                if not len(multisig_fp):
+                    multisig_fp = fp
+                elif multisig_fp != fp:
+                    multisig_fp_mismatch = True
         else:
             raise SigningError(FailureType.DataError,
                                'Wrong input script type')
@@ -100,7 +106,12 @@ async def check_tx_fee(tx: SignTx, root):
         txo_bin.amount = txo.amount
         txo_bin.script_pubkey = output_derive_script(txo, coin, root)
         weight.add_output(txo_bin.script_pubkey)
-        if output_is_change(txo, wallet_path, segwit_in):
+        is_change = output_is_change(txo, wallet_path, segwit_in)
+        if txo.multisig and \
+                (multisig_fp_mismatch or
+                 multisig_fp is not multisig_fingerprint(txo.multisig)):
+            is_change = False
+        if is_change:
             if change_out != 0:
                 raise SigningError(FailureType.ProcessError,
                                    'Only one change output is valid')
