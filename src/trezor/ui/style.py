@@ -58,6 +58,10 @@ ICON_BACK     = 'trezor/res/left.toig'
 ICON_NOCOPY   = 'trezor/res/nocopy.toig'
 ICON_SWIPE    = 'trezor/res/swipedown.toig'
 
+# scroll icons
+ICON_UP       = 'trezor/res/arrow-up.toig'
+ICON_DOWN     = 'trezor/res/arrow-down.toig'
+
 # buttons
 BTN_DEFAULT = {
     'bg-color': BG,

@@ -37,15 +37,15 @@ async def animate_swipe():
     sleep = loop.sleep(time_delay)
     for t in ui.pulse(draw_delay):
         fg = ui.blend(ui.GREY, ui.DARK_GREY, t)
-        ui.display.icon(110, 210, res.load(ui.ICON_SWIPE), fg, ui.BG)
+        ui.display.text_center(110, 210, 'Swipe', ui.NORMAL, fg, ui.BG)
         await sleep
 
 
 def render_scrollbar(page, page_count):
     bbox = const(220)
-    size = const(8)
+    size = const(10)
 
-    padding = 14
+    padding = 15
     if page_count * padding > bbox:
         padding = bbox // page_count
 
@@ -58,6 +58,12 @@ def render_scrollbar(page, page_count):
                                   size, ui.DARK_GREY, ui.BG, 4)
     ui.display.bar_radius(x, y + page * padding, size,
                           size, ui.FG, ui.BG, 4)
+
+    if page != 0:
+        ui.display.icon(x-1, y - 20, res.load(ui.ICON_UP), ui.FG, ui.BG)
+
+    if page + 1 != page_count:
+        ui.display.icon(x-1, y + (page_count * padding) + 10, res.load(ui.ICON_DOWN), ui.FG, ui.BG)
 
 
 class Scrollpage(ui.Widget):
